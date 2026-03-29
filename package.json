@@ -1,12 +1,12 @@
 {
-  "name": "csv-editor-app-module",
+  "name": "asset-editor-module",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "package": "npm run build && zip -r csv-editor-app-module.zip app module.toml"
+    "package": "npm run build && zip -r asset-editor.zip app module.toml"
   },
   "devDependencies": {
     "vite": "^8.0.3"
