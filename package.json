@@ -1,0 +1,17 @@
+{
+  "name": "csv-editor-app-module",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "package": "npm run build && zip -r csv-editor-app-module.zip app module.toml"
+  },
+  "devDependencies": {
+    "vite": "^8.0.3"
+  },
+  "dependencies": {
+    "papaparse": "^5.5.3"
+  }
+}

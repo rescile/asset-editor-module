@@ -1,0 +1,6 @@
+[module]
+name = "asset-editor"
+url = "https://github.com/rescile/asset-editor-module"
+version = "0.0.1"
+description = "A standalone CSV editor application module for Asset Inventory."
+rescile_version = ">=0.1.133"
