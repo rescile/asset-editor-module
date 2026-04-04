@@ -8,7 +8,6 @@ pkgs.mkShell {
   buildInputs = [
     pkgs.nodejs
     pkgs.npm-check-updates
-    pkgs.nodePackages.npm
     pkgs.zip
   ];
 

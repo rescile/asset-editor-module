@@ -14,7 +14,25 @@ const appDiv = document.getElementById('app');
 let currentHeaders = [];
 
 // --- INIT ---
-function init() {
+async function init() {
+    try {
+        const res = await fetch('/api/features');
+        if (res.ok) {
+            const features = await res.json();
+            if (!features.includes('admin_assets')) {
+                appDiv.innerHTML = `
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 -960 960 960" width="48px" fill="currentColor" opacity="0.5"><path d="M240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T760-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z"/></svg>
+                        <h2>Enterprise Feature Required</h2>
+                        <p>This application requires the <strong>admin_assets</strong> enterprise feature.</p>
+                    </div>
+                `;
+                return;
+            }
+        }
+    } catch (e) {
+        console.error('Failed to fetch features:', e);
+    }
     setupThemeToggle();
     window.addEventListener('hashchange', handleRoute);
     handleRoute();
@@ -66,6 +84,56 @@ function showNotification(message, type = 'is-info') {
     setTimeout(() => notif.remove(), 4000);
 }
 
+// --- BUILD PROGRESS ---
+let buildEventSource = null;
+
+function showBuildProgress() {
+    let modal = document.getElementById('buildProgressModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'buildProgressModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>Building Graph...</h3>
+                <div id="buildLogs" class="build-logs"></div>
+                <div class="btn-group">
+                    <button type="button" class="button is-primary" id="buildCloseBtn" disabled>Building...</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('buildCloseBtn').onclick = () => modal.classList.remove('active');
+    }
+    
+    const logsEl = document.getElementById('buildLogs');
+    logsEl.innerHTML = '';
+    const closeBtn = document.getElementById('buildCloseBtn');
+    closeBtn.disabled = true;
+    closeBtn.textContent = 'Building...';
+    modal.classList.add('active');
+
+    if (buildEventSource) buildEventSource.close();
+    buildEventSource = new EventSource('/api/build/stream');
+    buildEventSource.onmessage = function(event) {
+        const msg = event.data;
+        if (msg === 'BUILD_COMPLETE') {
+            buildEventSource.close();
+            closeBtn.disabled = false;
+            closeBtn.textContent = 'Close';
+            showNotification('New graph is available!', 'is-success');
+        } else {
+            logsEl.appendChild(document.createTextNode(msg + '\n'));
+            logsEl.scrollTop = logsEl.scrollHeight;
+        }
+    };
+    buildEventSource.onerror = function() {
+        buildEventSource.close();
+        closeBtn.disabled = false;
+        closeBtn.textContent = 'Close (Error)';
+    };
+}
+
 // --- VIEWS ---
 async function renderList() {
     appDiv.innerHTML = `
@@ -89,6 +157,7 @@ async function renderList() {
         }
     } catch (e) {
         showNotification(`Failed to load assets: ${e.message}`, 'is-danger');
+        showBuildProgress();
         console.warn('Fallback to empty / dummy list');
         files = [];
     }
@@ -343,6 +412,7 @@ async function saveFile(filename) {
         
         if (!res.ok) throw new Error(res.statusText);
         showNotification('File saved successfully', 'is-success');
+        showBuildProgress();
     } catch (e) {
         showNotification(`Save failed: ${e.message}`, 'is-danger');
     } finally {
