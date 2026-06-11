@@ -12,9 +12,40 @@ const SVGS = {
 // --- STATE ---
 const appDiv = document.getElementById('app');
 let currentHeaders = [];
+let currentFilename = '';
+let enginePollingInterval = null;
+
+async function checkPublishingState() {
+    try {
+        const res = await fetch('/api/engine-info');
+        if (res.ok) {
+            const data = await res.json();
+            const banner = document.getElementById('publishingBanner');
+            const wasPublishing = sessionStorage.getItem('app_is_publishing') === 'true';
+            
+            if (data.is_publishing) {
+                if (banner) banner.classList.remove('is-hidden');
+                sessionStorage.setItem('app_is_publishing', 'true');
+            } else {
+                if (banner) banner.classList.add('is-hidden');
+                sessionStorage.setItem('app_is_publishing', 'false');
+                if (wasPublishing) {
+                    showNotification('Enterprise graph successfully updated', 'is-success');
+                    await handleRoute();
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to check publishing state', e);
+    }
+}
 
 // --- INIT ---
 async function init() {
+    if (!enginePollingInterval) {
+        enginePollingInterval = setInterval(checkPublishingState, 5000);
+        checkPublishingState();
+    }
     try {
         const res = await fetch('/api/features');
         if (res.ok) {
@@ -115,13 +146,15 @@ function showBuildProgress() {
 
     if (buildEventSource) buildEventSource.close();
     buildEventSource = new EventSource('/api/build/stream');
-    buildEventSource.onmessage = function(event) {
+    buildEventSource.onmessage = async function(event) {
         const msg = event.data;
         if (msg === 'BUILD_COMPLETE') {
             buildEventSource.close();
             closeBtn.disabled = false;
             closeBtn.textContent = 'Close';
-            showNotification('New graph is available!', 'is-success');
+            showNotification('Changes saved locally. Build complete.', 'is-success');
+            await checkPublishingState();
+            await handleRoute();
         } else {
             logsEl.appendChild(document.createTextNode(msg + '\n'));
             logsEl.scrollTop = logsEl.scrollHeight;
@@ -201,6 +234,7 @@ async function renderList() {
 }
 
 async function renderEditor(filename) {
+    currentFilename = filename;
     appDiv.innerHTML = `<p>Loading ${filename}...</p>`;
     let csvText = '';
     let isNewFile = true;
@@ -334,11 +368,51 @@ function appendRow(rowData = []) {
 
     const tdAction = document.createElement('td');
     tdAction.className = 'action-cell';
+    tdAction.style.whiteSpace = 'nowrap';
+
+    const updateBtn = document.createElement('button');
+    updateBtn.className = 'update-row-btn';
+    updateBtn.title = 'Partial Update Row';
+    updateBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z"/></svg>';
+    updateBtn.onclick = async () => {
+        const inputs = tr.querySelectorAll('td input');
+        const rData = Array.from(inputs).map(inp => inp.value);
+        if (!rData[0]) return showNotification('First column (key) must not be empty', 'is-danger');
+        const csvString = Papa.unparse([currentHeaders, rData]);
+        const formData = new FormData();
+        formData.append('update', csvString);
+        try {
+            const res = await fetch(`${API_BASE}/${encodeURIComponent(currentFilename)}`, { method: 'POST', body: formData });
+            if (!res.ok) throw new Error(res.statusText);
+            showNotification(`Row ${rData[0]} updated via partial write`, 'is-success');
+            showBuildProgress();
+        } catch(e) {
+            showNotification(`Update failed: ${e.message}`, 'is-danger');
+        }
+    };
     const rmBtn = document.createElement('button');
     rmBtn.className = 'remove-row-btn';
     rmBtn.title = 'Remove Row';
     rmBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>';
-    rmBtn.onclick = () => tr.remove();
+    rmBtn.onclick = async () => {
+        const firstColValue = tr.querySelector('td input').value;
+        if (firstColValue) {
+            const csvString = `${currentHeaders[0]}\n${firstColValue}`;
+            const formData = new FormData();
+            formData.append('remove', csvString);
+            try {
+                const res = await fetch(`${API_BASE}/${encodeURIComponent(currentFilename)}`, { method: 'POST', body: formData });
+                if (!res.ok) throw new Error(res.statusText);
+                showNotification(`Row ${firstColValue} removed via partial write`, 'is-success');
+                showBuildProgress();
+            } catch(e) {
+                console.error('Partial remove failed', e);
+            }
+        }
+        tr.remove();
+    };
+
+    tdAction.appendChild(updateBtn);
     
     tdAction.appendChild(rmBtn);
     tr.appendChild(tdAction);

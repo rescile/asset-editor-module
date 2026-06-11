@@ -33,6 +33,22 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 
+.publishing-banner {
+    background-color: var(--primary);
+    color: #fff;
+    text-align: center;
+    padding: 0.5rem;
+    font-weight: 500;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+.spinner { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
 .header-container {
     display: flex;
     justify-content: space-between;
@@ -148,7 +164,7 @@ h2 { margin: 3rem 0 1.5rem; border-bottom: 2px solid var(--border); padding-bott
 .table tr:hover td { background-color: var(--hover-bg); }
 
 /* Action Cells */
-.action-cell { width: 50px; min-width: 50px !important; text-align: center; vertical-align: middle; }
+.action-cell { width: 80px; min-width: 80px !important; text-align: center; vertical-align: middle; }
 
 /* Remove Buttons */
 .remove-col-btn {
@@ -160,6 +176,16 @@ h2 { margin: 3rem 0 1.5rem; border-bottom: 2px solid var(--border); padding-bott
 }
 .table th:hover .remove-col-btn { opacity: 1; }
 .remove-col-btn:hover { background: var(--danger); color: white; }
+
+.update-row-btn {
+    opacity: 0; border-radius: 6px; padding: 0.25rem; width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--hover-bg); color: var(--link);
+    border: 1px solid transparent; cursor: pointer; transition: all 0.2s;
+    margin-right: 4px;
+}
+.table tr:hover .update-row-btn { opacity: 1; }
+.update-row-btn:hover { background: var(--link); color: white; }
 
 .remove-row-btn {
     opacity: 0; border-radius: 6px; padding: 0.25rem; width: 28px; height: 28px;
