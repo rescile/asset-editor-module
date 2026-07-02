@@ -297,16 +297,6 @@ h2 { margin: 3rem 0 1.5rem; border-bottom: 2px solid var(--border); padding-bott
 .table th:hover .remove-col-btn { opacity: 1; }
 .remove-col-btn:hover { background: var(--danger); color: white; }
 
-.update-row-btn {
-    opacity: 0; border-radius: 6px; padding: 0.25rem; width: 28px; height: 28px;
-    display: inline-flex; align-items: center; justify-content: center;
-    background: var(--hover-bg); color: var(--link);
-    border: 1px solid transparent; cursor: pointer; transition: all 0.2s;
-    margin-right: 4px;
-}
-.table tr:hover .update-row-btn { opacity: 1; }
-.update-row-btn:hover { background: var(--link); color: white; }
-
 .remove-row-btn {
     opacity: 0; border-radius: 6px; padding: 0.25rem; width: 28px; height: 28px;
     display: inline-flex; align-items: center; justify-content: center;

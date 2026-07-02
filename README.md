@@ -1,16 +1,16 @@
 # Asset Inventory CSV Editor
 
 ## Overview
-This application is a simple, web-based CSV table editor that communicates with the rescile backend. It enables developers and administrators to manage asset data natively stored in CSV files, supporting both full file mutations and partial writes.
+This application is a simple, web-based CSV table editor that communicates with the rescile backend. It enables developers and administrators to manage asset data natively stored in CSV files, supporting full file read and write operations.
 
 ## API Interfaces
 
-The backend exposes endpoints under `/api/assets` to manage CSV files. The API supports reading, full replacements, and partial writes (updates/deletions).
+The backend exposes endpoints under `/api/assets` to manage CSV files. The API supports reading and full file replacements.
 
 ### 1. List Assets
 - **URL:** `/api/assets/`
 - **Method:** `GET`
-- **Response:** Returns a JSON array or object containing the list of available `.csv` asset files.
+- **Response:** Returns a JSON array containing the list of available `.csv` asset files.
 
 ### 2. Read Asset
 - **URL:** `/api/assets/{filename}`
@@ -22,9 +22,9 @@ The backend exposes endpoints under `/api/assets` to manage CSV files. The API s
 - **Method:** `POST`
 - **Content-Type:** `multipart/form-data`
 
-The mutation endpoint accepts one of three fields in the form data to dictate how the file is processed:
+The mutation endpoint accepts the following field:
 
-#### A. Full Overwrite (`data`)
+#### Full Overwrite (`data`)
 Replaces the entire content of the CSV file.
 - **Field Name:** `data`
 - **Value:** The complete CSV string (including headers).
@@ -34,18 +34,6 @@ Replaces the entire content of the CSV file.
   fd.append('data', 'name,customer\ninst1,ydc\ninst2,ydc');
   fetch('/api/assets/instance.csv', { method: 'POST', body: fd });
   ```
-
-#### B. Partial Write / Update (`update`)
-Updates existing rows or appends new rows based on the primary key (typically the first column).
-- **Field Name:** `update`
-- **Value:** A CSV string containing the headers and the row(s) to be updated or added.
-- **Note:** Only modifies matched rows and leaves all other entries intact.
-
-#### C. Partial Write / Delete (`remove`)
-Removes specific rows based on the primary key.
-- **Field Name:** `remove`
-- **Value:** A CSV string containing the header of the primary key and the keys of the row(s) to delete.
-- **Note:** This effectively deletes the respective record(s) without needing to re-send the whole dataset.
 
 ## Live Update and Build Status Integration
 
